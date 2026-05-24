@@ -135,6 +135,7 @@ export function ListView({
       setPublishSuccess(true);
       setTimeout(() => {
         setPublishSuccess(false);
+        onRemoveSongs(selectedIds);
         setSelectedIds(new Set());
         setAuthorName("");
       }, 2000);
