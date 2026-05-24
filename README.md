@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎵 Music Uploader
 
-## Getting Started
+> **Note:** This repository contains an internal tool specifically designed and built for the **Ankur Pathshala Project**. We have decided to make this project public to demonstrate our development practices and showcase how we build our internal company tools!
 
-First, run the development server:
+A modern, highly-polished Next.js application for seamlessly uploading MP3 files and managing music metadata. It features a native-feeling UI, automatic album art extraction, and a direct integration with Supabase for cloud storage and database management.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✨ Features
+
+- **Modern Native UI:** Built with Radix UI and Tailwind CSS for a sleek, responsive, and accessible experience.
+- **Drag & Drop Upload:** Seamlessly drag and drop `.mp3` files right into the browser.
+- **Auto-Metadata Extraction:** Automatically extracts ID3 tags and album cover art straight from the MP3 blobs entirely in the browser.
+- **Inline Editing:** Double-click song titles to easily rename them before publishing.
+- **Local Persistence:** Uses `localforage` (IndexedDB) to save your upload queue locally, so you don't lose data if you refresh the page.
+- **Supabase Integration:** Publishes MP3s to a `music` bucket, Cover Art to an `albums` bucket, and upserts a highly structured row into your database.
+- **Docker Ready:** Includes a multi-stage, highly optimized `Dockerfile` for instantaneous production deployment.
+
+## 🛠 Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org/) (App Router)
+- **Styling:** [Radix UI Themes](https://www.radix-ui.com/) & [Tailwind CSS](https://tailwindcss.com/)
+- **Icons:** [Lucide React](https://lucide.dev/)
+- **Storage/DB:** [Supabase](https://supabase.com/)
+- **Parsing:** `music-metadata-browser`
+
+## 🚀 Getting Started
+
+### 1. Environment Setup
+Create a `.env.local` file in the root of the project with your Supabase credentials:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-service-role-key
 ```
 
+### 2. Local Development
+Install dependencies and run the Next.js development server:
+
+```bash
+npm install
+npm run dev
+```
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Docker Deployment
+This project is configured with a standalone Next.js build to keep the Docker image size extremely small.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Build the image:**
+```bash
+docker build -t music-uploader-app .
+```
 
-## Learn More
+**Run the container:**
+```bash
+docker run -d -p 3001:3000 --name music-uploader music-uploader-app
+```
+Then open [http://localhost:3001](http://localhost:3001).
 
-To learn more about Next.js, take a look at the following resources:
+## 🗄️ Supabase Schema Reference
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+If you are setting this up from scratch, here is the required SQL schema:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```sql
+-- Create buckets
+insert into storage.buckets (id, name, public) values ('music', 'music', true);
+insert into storage.buckets (id, name, public) values ('albums', 'albums', true);
 
-## Deploy on Vercel
+-- Allow public uploads
+create policy "Public Upload Music" on storage.objects for insert with check ( bucket_id = 'music' );
+create policy "Public Upload Albums" on storage.objects for insert with check ( bucket_id = 'albums' );
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+-- Create music table
+create table if not exists public.music (
+  id uuid primary key default gen_random_uuid(),
+  music_name text not null,
+  music_creator_name text,
+  music_audio_url text not null,
+  music_photo_url text,
+  audio_storage_path text unique not null,
+  created_at timestamptz default now()
+);
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Built for the Ankur Pathshala Project.*
